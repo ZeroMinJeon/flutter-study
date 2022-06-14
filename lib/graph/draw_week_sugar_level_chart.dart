@@ -196,7 +196,7 @@ class _WeekSugarLevelChart extends CustomPainter {
       var index = listOfDx.indexOf(pos.dx);
       if (index == 0) {
         result = areas.first;
-      } else if (index == listOfDx.length) {
+      } else if (pos.dx == listOfDx.last) {
         result = areas.last;
       } else {
         var abs1 = (listOfDx[index - 1] - pos.dx).abs();
