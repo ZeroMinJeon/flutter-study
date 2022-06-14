@@ -6,7 +6,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter3study/graph/curve_painter.dart';
 import 'package:flutter3study/graph/custom_shape.dart';
-import 'package:flutter3study/graph/draw_chart.dart';
+import 'package:flutter3study/graph/draw_sugar_level_chart.dart';
+import 'package:flutter3study/graph/draw_week_sugar_level_chart.dart';
 import 'package:flutter3study/graph/example1_chart.dart';
 import 'package:flutter3study/graph/line_chart_sample.dart';
 import 'package:flutter3study/graph/line_chart_sample2.dart';
@@ -16,23 +17,20 @@ import 'package:flutter3study/graph/pi_chart.dart';
 import 'package:get/get.dart';
 import 'package:widget_to_image/widget_to_image.dart';
 
-class GraphScreen extends StatefulWidget {
+class GraphScreen extends StatelessWidget {
   const GraphScreen({Key? key}) : super(key: key);
-
-  @override
-  State<GraphScreen> createState() => _GraphScreenState();
-}
-
-class _GraphScreenState extends State<GraphScreen> {
-  ByteData? _byteData;
-  GlobalKey _globalKey = GlobalKey();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Graph Screen')),
-      body: DrawChartScreen(),
-    );
+        appBar: AppBar(title: const Text('Graph Screen')),
+        body: ListView(children: [
+          DrawSugarLevelChartScreen(),
+          Container(
+            height: 20,
+            color: Colors.indigoAccent,
+          ),
+          DrawWeekSugarLevelChartScreen()
+        ]));
   }
 
 // @override
