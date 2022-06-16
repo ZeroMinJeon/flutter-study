@@ -13,61 +13,256 @@ class DrawWeekSugarLevelChartScreen extends StatefulWidget {
 
 class _DrawWeekSugarLevelChartScreenState
     extends State<DrawWeekSugarLevelChartScreen> {
-  List<Offset> spots1 = [
-    Offset(0, 200),
-    Offset(30, 120),
-    Offset(20, 160),
-    Offset(40, 80),
-    Offset(10, 90),
-    Offset(60, 180),
-    Offset(50, 140),
+  DateTime date = DateTime(2022, 5, 1);
+  List<SugarLevelData> data = [
+    SugarLevelData(DateTime(2022, 5, 1, 1), 30),
+    SugarLevelData(DateTime(2022, 5, 1, 2), 70),
+    SugarLevelData(DateTime(2022, 5, 1, 3, 10), 80),
+    SugarLevelData(DateTime(2022, 5, 1, 3, 20), 90),
+    SugarLevelData(DateTime(2022, 5, 1, 4), 90),
+    SugarLevelData(DateTime(2022, 5, 1, 5), 90),
+    SugarLevelData(DateTime(2022, 5, 1, 6), 100),
+    SugarLevelData(DateTime(2022, 5, 1, 7), 120),
+    SugarLevelData(DateTime(2022, 5, 1, 7), 110),
+    SugarLevelData(DateTime(2022, 5, 1, 8), 130),
+    SugarLevelData(DateTime(2022, 5, 1, 14), 140),
+    SugarLevelData(DateTime(2022, 5, 1, 19), 150),
+    SugarLevelData(DateTime(2022, 5, 1, 20), 210),
+    SugarLevelData(DateTime(2022, 5, 1, 23), 100),
+    SugarLevelData(DateTime(2022, 5, 2, 8), 100),
+    SugarLevelData(DateTime(2022, 5, 2, 10), 140),
+    SugarLevelData(DateTime(2022, 5, 2, 16), 120),
+    SugarLevelData(DateTime(2022, 5, 2, 19), 150),
+    SugarLevelData(DateTime(2022, 5, 3, 1), 100),
+    SugarLevelData(DateTime(2022, 5, 3, 21), 120),
+    SugarLevelData(DateTime(2022, 5, 4, 1), 120),
+    SugarLevelData(DateTime(2022, 5, 5, 1), 100),
+    SugarLevelData(DateTime(2022, 5, 5, 4), 70),
+    SugarLevelData(DateTime(2022, 5, 6, 1), 100),
+    SugarLevelData(DateTime(2022, 5, 6, 10), 10),
+    SugarLevelData(DateTime(2022, 5, 7, 1), 100),
+    SugarLevelData(DateTime(2022, 5, 8, 1), 120),
+    SugarLevelData(DateTime(2022, 5, 12, 1), 130),
+    SugarLevelData(DateTime(2022, 5, 14, 1), 120),
+    SugarLevelData(DateTime(2022, 5, 18, 1), 110),
+    SugarLevelData(DateTime(2022, 5, 19, 1), 100),
+    SugarLevelData(DateTime(2022, 5, 20, 1), 120),
+    SugarLevelData(DateTime(2022, 5, 21, 1), 100),
   ];
 
-  List<Offset> spots3 = [
-    Offset(0, 160),
-    Offset(30, 50),
-    Offset(20, 100),
-    Offset(40, 40),
-    Offset(10, 45),
-    Offset(60, 120),
-    Offset(50, 80),
-  ];
+  List<TimeSugarLevelData> timeSugarLevelDataList = [];
+  double ySeperateSize = 230;
+  double upperThreshold = 180;
+  double normalThreshold = 120;
+  double lowerThreshold = 70;
 
-  List<Offset> spots5 = [
-    Offset(0, 100),
-    Offset(30, 30),
-    Offset(20, 60),
-    Offset(40, 20),
-    Offset(10, 15),
-    Offset(60, 80),
-    Offset(50, 50),
-  ];
+  double leftPadding = 100;
+  double topPadding = 100;
+  double rightPadding = 100;
+  double bottomPadding = 50;
 
-  double touchDx = 0;
+  @override
+  void initState() {
+    super.initState();
+    checkWeekData(isFirst: true);
+  }
+
+  void checkWeekData({bool isFirst = false}) {
+    var thisWeekday = date.weekday;
+    List<TimeSugarLevelData> result = [];
+    data.sort((a, b) => a.date.isBefore(b.date) ? 0 : 1);
+    var startDate = DateTime(
+        date.year, date.month, date.day - (thisWeekday == 7 ? 0 : thisWeekday));
+    if (!isFirst &&
+        timeSugarLevelDataList.isNotEmpty &&
+        startDate.isAtSameMomentAs(timeSugarLevelDataList.first.date)) return;
+    for (int i = 0; i < 7; i++) {
+      var aDate = DateTime(startDate.year, startDate.month, startDate.day + i);
+      var bDate =
+          DateTime(startDate.year, startDate.month, startDate.day + i + 1);
+      for (var d in data) {
+        if ((d.date.isAfter(aDate) || d.date.isAtSameMomentAs(aDate)) &&
+            d.date.isBefore(bDate)) {
+          var index = result
+              .indexWhere((element) => element.date.isAtSameMomentAs(aDate));
+          if (index != -1) {
+            result[index].addLevel(d.level);
+          } else {
+            result.add(TimeSugarLevelData.fromLevelAndDate(aDate, d.level));
+          }
+        } else {
+          continue;
+        }
+      }
+    }
+    setState(() {
+      timeSugarLevelDataList = [...result];
+      var highY = result.fold<double>(
+          0,
+          (previousValue, element) => previousValue > element.highLevel
+              ? previousValue
+              : element.highLevel);
+      ySeperateSize = ySeperateSize > highY ? ySeperateSize : highY;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width,
-          height: 400,
-          child: GestureDetector(
-            onTapDown: (detail) {
-              setState(() => touchDx = detail.globalPosition.dx);
-            },
-            onHorizontalDragUpdate: (detail) {
-              setState(() => touchDx = detail.globalPosition.dx);
-            },
+      width: MediaQuery.of(context).size.width,
+      child: Column(children: [
+        FittedBox(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: 400,
+            child: Stack(
+              children: [
+                _ChartBackground(
+                  width: MediaQuery.of(context).size.width,
+                  height: 400,
+                  ySeperateSize: ySeperateSize,
+                  upperThreshold: upperThreshold,
+                  normalThreshold: normalThreshold,
+                  lowerThreshold: lowerThreshold,
+                  leftPadding: leftPadding,
+                  rightPadding: rightPadding,
+                  topPadding: topPadding,
+                  bottomPadding: bottomPadding,
+                ),
+                _ChartForGround(
+                  timeSugarLevelDataList: timeSugarLevelDataList,
+                  width: MediaQuery.of(context).size.width,
+                  height: 400,
+                  ySeperateSize: ySeperateSize,
+                  upperThreshold: upperThreshold,
+                  normalThreshold: normalThreshold,
+                  lowerThreshold: lowerThreshold,
+                  leftPadding: leftPadding,
+                  rightPadding: rightPadding,
+                  topPadding: topPadding,
+                  bottomPadding: bottomPadding,
+                ),
+              ],
+            ),
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+                onPressed: () {
+                  setState(() => date = date.subtract(Duration(days: 1)));
+                  checkWeekData();
+                },
+                icon: Icon(Icons.remove)),
+            Text('${date.year}.${date.month}.${date.day}'),
+            IconButton(
+                onPressed: () {
+                  setState(() => date = date.add(Duration(days: 1)));
+                  checkWeekData();
+                },
+                icon: Icon(Icons.add))
+          ],
+        )
+      ]),
+    );
+  }
+}
+
+class _ChartForGround extends StatefulWidget {
+  final double width;
+  final double height;
+  final double ySeperateSize;
+  final double upperThreshold;
+  final double normalThreshold;
+  final double lowerThreshold;
+  final double leftPadding;
+  final double topPadding;
+  final double rightPadding;
+  final double bottomPadding;
+  final List<TimeSugarLevelData> timeSugarLevelDataList;
+
+  const _ChartForGround(
+      {Key? key,
+      required this.width,
+      required this.height,
+      required this.ySeperateSize,
+      required this.upperThreshold,
+      required this.normalThreshold,
+      required this.lowerThreshold,
+      required this.timeSugarLevelDataList,
+      this.leftPadding = 100,
+      this.topPadding = 50,
+      this.rightPadding = 100,
+      this.bottomPadding = 100})
+      : super(key: key);
+
+  @override
+  State<_ChartForGround> createState() => _ChartForGroundState();
+}
+
+class _ChartForGroundState extends State<_ChartForGround> {
+  double? touchDx;
+
+  late List<ChartData> chartData;
+
+  void calculatedData() {
+    chartData = widget.timeSugarLevelDataList
+        .map((data) => ChartData.fromTimeSugarLevelData(
+            data,
+            Size(widget.width, widget.height),
+            widget.leftPadding,
+            widget.topPadding,
+            widget.rightPadding,
+            widget.bottomPadding,
+            100,
+            100,
+            1,
+            widget.ySeperateSize))
+        .toList();
+  }
+
+  @override
+  void initState() {
+    calculatedData();
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    if (oldWidget.timeSugarLevelDataList.isEmpty ||
+        widget.timeSugarLevelDataList.isEmpty) {
+      calculatedData();
+    } else if (!oldWidget.timeSugarLevelDataList.first.date
+        .isAtSameMomentAs(widget.timeSugarLevelDataList.first.date)) {
+      calculatedData();
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      child: SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: GestureDetector(
+          onTapDown: (detail) {
+            setState(() => touchDx = detail.globalPosition.dx);
+          },
+          onHorizontalDragUpdate: (detail) {
+            setState(() => touchDx = detail.globalPosition.dx);
+          },
+          child: SizedBox(
+            width: widget.width,
+            height: widget.height,
             child: CustomPaint(
               painter: _WeekSugarLevelChart(
-                  highValueSpots: spots1,
-                  averageValueSpots: spots3,
-                  lowValueSpots: spots5,
-                  upperThreshold: 160,
-                  normalThreshold: 140,
-                  lowerThreshold: 60,
+                  chartDataList: chartData,
+                  ySeperatedNum: widget.ySeperateSize,
+                  upperThreshold: widget.upperThreshold,
+                  normalThreshold: widget.normalThreshold,
+                  lowerThreshold: widget.lowerThreshold,
                   touchDx: touchDx),
             ),
           ),
@@ -77,33 +272,79 @@ class _DrawWeekSugarLevelChartScreenState
   }
 }
 
-class _WeekSugarLevelChart extends CustomPainter {
-  final List<Offset> highValueSpots;
-  final List<Offset> averageValueSpots;
-  final List<Offset> lowValueSpots;
+class _ChartBackground extends StatelessWidget {
+  final double width;
+  final double height;
+  final double ySeperateSize;
   final double upperThreshold;
   final double normalThreshold;
   final double lowerThreshold;
-  final double touchDx;
+  final double leftPadding;
+  final double topPadding;
+  final double rightPadding;
+  final double bottomPadding;
+
+  const _ChartBackground(
+      {Key? key,
+      required this.width,
+      required this.height,
+      required this.ySeperateSize,
+      required this.upperThreshold,
+      required this.normalThreshold,
+      required this.lowerThreshold,
+      this.leftPadding = 100,
+      this.topPadding = 50,
+      this.rightPadding = 100,
+      this.bottomPadding = 100})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(
+          size: Size(width, height),
+          painter: _WeekSugarLevelBackgroundChart(
+              ySeperateSize: ySeperateSize,
+              upperThreshold: upperThreshold,
+              normalThreshold: normalThreshold,
+              lowerThreshold: lowerThreshold,
+              leftPadding: leftPadding,
+              topPadding: topPadding,
+              rightPadding: rightPadding,
+              bottomPadding: bottomPadding),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeekSugarLevelChart extends CustomPainter {
+  final List<ChartData> chartDataList;
+  final double upperThreshold;
+  final double normalThreshold;
+  final double lowerThreshold;
+  final double? touchDx;
+  final double ySeperatedNum;
 
   double xSeperatedNum = 0;
-  double ySeperatedNum = 350;
   double leftPadding = 100;
-  double topWidgetHeight = 100;
+  double topPadding = 100;
   double rightPadding = 100;
-  double bottomWidgetHeight = 50;
+  double bottomPadding = 50;
   double areaWidth = 40;
 
-  double lineWidth = 4;
+  double lineWidth = 6;
   double spotWidth = 5;
   double fontSize = 15;
 
   ChartAreaData? chartAreaData;
 
   _WeekSugarLevelChart(
-      {required this.highValueSpots,
-      required this.averageValueSpots,
-      required this.lowValueSpots,
+      {required this.chartDataList,
+      required this.ySeperatedNum,
       required this.upperThreshold,
       required this.normalThreshold,
       required this.lowerThreshold,
@@ -111,79 +352,45 @@ class _WeekSugarLevelChart extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    var highSpots = calculatedAndAddNewSpot(highValueSpots, size);
-    var averageSpots = calculatedAndAddNewSpot(averageValueSpots, size);
-    var lowSpots = calculatedAndAddNewSpot(lowValueSpots, size);
-    var areas = calculatedChartAreaData(averageSpots, highSpots);
-    var groundLineSpots = [
-      Offset(0, size.height),
-      Offset(size.width, size.height)
-    ];
-
-    Paint paint = Paint()
-      ..color = Colors.indigoAccent
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    Path path = Path();
-
-    drawThresholdLine(canvas, size);
-    drawValueText(canvas, size, areas, Offset(touchDx, 40));
-    drawLinesAndSpots(canvas, size, highSpots,
+    drawValueText(
+        canvas,
+        size,
+        chartDataList
+            .map((data) => data.toChartAreaData())
+            .toList()); // Offset(touchDx??0, 40));
+    drawLinesAndSpots(canvas, size,
+        chartDataList.map((data) => Offset(data.dx, data.highDy)).toList(),
         lineColor: Colors.blueAccent, spotColor: Colors.black);
-    drawLinesAndSpots(canvas, size, averageSpots,
+    drawLinesAndSpots(canvas, size,
+        chartDataList.map((data) => Offset(data.dx, data.averageDy)).toList(),
         lineColor: Colors.amberAccent, spotColor: Colors.black);
-    drawLinesAndSpots(canvas, size, lowSpots,
+    drawLinesAndSpots(canvas, size,
+        chartDataList.map((data) => Offset(data.dx, data.lowDy)).toList(),
         lineColor: Colors.orangeAccent, spotColor: Colors.black);
-
-    paint..color = Colors.lightGreenAccent;
-    path = Path()..addPolygon(groundLineSpots, false);
-    canvas.drawPath(path, paint);
   }
 
-  void drawLinesAndSpots(Canvas canvas, Size size, List<ChartData> chartData,
+  void drawLinesAndSpots(Canvas canvas, Size size, List<Offset> offsets,
       {required Color lineColor, required Color spotColor}) {
     Paint paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = lineWidth
       ..color = lineColor;
-    var offsets = chartData.map((data) => data.offset).toList();
     canvas.drawPoints(PointMode.polygon, offsets, paint);
     paint.color = spotColor;
     paint.strokeWidth = spotWidth;
     canvas.drawPoints(PointMode.points, offsets, paint);
   }
 
-  List<ChartData> calculatedAndAddNewSpot(List<Offset> spots, Size size) {
-    List<Offset> sortSpots = [...spots];
-    sortSpots.sort((a, b) => a.dx < b.dx ? 0 : 1);
-    for (int i = 0; i < sortSpots.length - 1; i++) {
-      while (ySeperatedNum <= sortSpots[i].dy) {
-        ySeperatedNum += 25;
-      }
-    }
-    xSeperatedNum =
-        sortSpots.last.dx >= xSeperatedNum ? sortSpots.last.dx : xSeperatedNum;
-    while (ySeperatedNum <= sortSpots.last.dy) {
-      ySeperatedNum += 25;
-    }
-    List<ChartData> result = [];
-    for (var spot in sortSpots) {
-      var calOffset = calculatedPositionSpot(spot, size);
-      result.add(ChartData(calOffset, spot.dy));
-    }
-    return result;
-  }
-
   // 터치 했을 때에 그 영역에 있는 값 디스플레이 해주기.
-  void drawValueText(
-      Canvas canvas, Size size, List<ChartAreaData> areas, Offset pos) {
+  void drawValueText(Canvas canvas, Size size, List<ChartAreaData> areas) {
+    if (touchDx == null) {
+      return;
+    }
     ChartAreaData? result;
     var listOfDx = [];
     for (var data in areas) {
-      if (data.lowDx < pos.dx && pos.dx < data.highDx) {
+      if (data.lowDx < touchDx! && touchDx! < data.highDx) {
         result = data;
         break;
       }
@@ -191,16 +398,16 @@ class _WeekSugarLevelChart extends CustomPainter {
     }
     // 터치 영역에서 제일 가까운 값 찾기.
     if (result == null) {
-      listOfDx.add(pos.dx);
+      listOfDx.add(touchDx);
       listOfDx.sort();
-      var index = listOfDx.indexOf(pos.dx);
+      var index = listOfDx.indexOf(touchDx);
       if (index == 0) {
         result = areas.first;
-      } else if (pos.dx == listOfDx.last) {
+      } else if (touchDx == listOfDx.last) {
         result = areas.last;
       } else {
-        var abs1 = (listOfDx[index - 1] - pos.dx).abs();
-        var abs2 = (pos.dx - listOfDx[index + 1]).abs();
+        var abs1 = (listOfDx[index - 1] - touchDx).abs();
+        var abs2 = (touchDx! - listOfDx[index + 1]).abs();
         if (abs1 < abs2) {
           result = areas[index - 1];
         } else {
@@ -233,13 +440,13 @@ class _WeekSugarLevelChart extends CustomPainter {
         TextPainter(text: maxSpan, textDirection: TextDirection.ltr);
     tp.layout();
 
-    double y = 0; //-tp.height * 0.5; // 텍스트의 방향을 고려해 y축 값을 보정해줍니다.
+    // double y = 0; //-tp.height * 0.5; // 텍스트의 방향을 고려해 y축 값을 보정해줍니다.
     double dx = result.lowDx - tp.width * 1.3 / 2 <= 0
         ? leftPadding // tp.width/2*1.3 - result.lowDx
         : result.highDx + tp.width >= size.width
             ? size.width - rightPadding - tp.width
             : result.dx - tp.width / 2; // 텍스트의 위치를 고려해 x축 값을 보정해줍니다.
-    double dy = pos.dy + y;
+    double dy = tp.height * 0.25 + 1;
 
     Offset offset = Offset(dx, dy);
     var rect = Rect.fromCenter(
@@ -253,8 +460,10 @@ class _WeekSugarLevelChart extends CustomPainter {
       ..color = Colors.black38;
     canvas.drawPath(
         Path()
-          ..addPolygon(
-              [Offset(result.dx, dy), Offset(result.dx, result.dy)], false),
+          ..addPolygon([
+            Offset(result.dx, dy),
+            Offset(result.dx, size.height - bottomPadding)
+          ], false),
         paint);
     paint = Paint()
       ..style = PaintingStyle.fill
@@ -267,6 +476,89 @@ class _WeekSugarLevelChart extends CustomPainter {
       ..color = Colors.black38;
     canvas.drawRRect(rrect, paint);
     tp.paint(canvas, offset);
+  }
+
+  List<Offset> calculatedPositionOfSpotList(List<Offset> spots, Size size) {
+    return spots
+        .map((spot) =>
+            Offset(calculatedDx(size, spot.dx), calculatedDy(size, spot.dy)))
+        .toList();
+  }
+
+  Offset calculatedPositionSpot(Offset spot, Size size) {
+    return Offset(calculatedDx(size, spot.dx), calculatedDy(size, spot.dy));
+  }
+
+  double calculatedDx(Size size, double dx) =>
+      dx * (size.width - leftPadding - rightPadding) / xSeperatedNum +
+      leftPadding;
+
+  double calculatedDy(Size size, double dy) {
+    var height = size.height - topPadding - bottomPadding;
+    return height +
+        topPadding -
+        (height / ySeperatedNum) *
+            dy; //(height - dy) / ySeperatedNum * height + topWidgetHeight;
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true; //timeSugarLevelDataList.isNotEmpty;
+  }
+
+  Color _selectTextColor(double value) {
+    return value >= upperThreshold
+        ? Colors.redAccent
+        : value <= lowerThreshold
+            ? Colors.purpleAccent
+            : Colors.greenAccent;
+  }
+}
+
+class _WeekSugarLevelBackgroundChart extends CustomPainter {
+  final double upperThreshold;
+  final double normalThreshold;
+  final double lowerThreshold;
+  final double ySeperateSize;
+
+  final double leftPadding;
+  final double topPadding;
+  final double rightPadding;
+  final double bottomPadding;
+  double areaWidth = 40;
+
+  double lineWidth = 6;
+  double spotWidth = 5;
+  double fontSize = 15;
+
+  ChartAreaData? chartAreaData;
+
+  _WeekSugarLevelBackgroundChart(
+      {required this.ySeperateSize,
+      required this.upperThreshold,
+      required this.normalThreshold,
+      required this.lowerThreshold,
+      this.leftPadding = 100,
+      this.topPadding = 50,
+      this.rightPadding = 100,
+      this.bottomPadding = 100});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    drawThresholdLine(canvas, size);
+    canvas.drawPoints(
+        PointMode.lines,
+        [
+          Offset(leftPadding, size.height - bottomPadding),
+          Offset(size.width - rightPadding, size.height - bottomPadding)
+        ],
+        paint);
   }
 
   void drawThresholdLine(Canvas canvas, Size size) {
@@ -291,74 +583,52 @@ class _WeekSugarLevelChart extends CustomPainter {
       }
     }
     Paint paint = Paint()
-      ..strokeWidth = 3
+      ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..color = Colors.redAccent.shade100;
     canvas.drawPoints(PointMode.lines, upperThresholdOffsets, paint);
-    paint.color = Colors.black12;
+    paint.color = Colors.black26;
     canvas.drawPoints(PointMode.lines, normalThresholdOffsets, paint);
-    paint.color = Colors.black12;
+    paint.color = Colors.black26;
     canvas.drawPoints(PointMode.lines, lowerThresholdOffsets, paint);
+    drawThresholdText(canvas, size, upperThreshold.toInt().toString(),
+        Colors.redAccent.shade100, upperDy);
+    drawThresholdText(canvas, size, normalThreshold.toInt().toString(),
+        Colors.black38, normalDy,
+        isDown: true);
+    drawThresholdText(canvas, size, lowerThreshold.toInt().toString(),
+        Colors.black38, lowerDy,
+        isDown: true);
   }
 
-  List<Offset> calculatedPositionOfSpotList(List<Offset> spots, Size size) {
-    return spots
-        .map((spot) =>
-            Offset(calculatedDx(size, spot.dx), calculatedDy(size, spot.dy)))
-        .toList();
-  }
+  void drawThresholdText(
+      Canvas canvas, Size size, String text, Color color, double y,
+      {bool isDown = false}) {
+    TextSpan maxSpan = TextSpan(
+        style: TextStyle(
+            fontSize: fontSize, color: color, fontWeight: FontWeight.bold),
+        text: text);
+    TextPainter tp =
+        TextPainter(text: maxSpan, textDirection: TextDirection.ltr);
+    tp.layout();
 
-  Offset calculatedPositionSpot(Offset spot, Size size) {
-    return Offset(calculatedDx(size, spot.dx), calculatedDy(size, spot.dy));
-  }
+    double dx = leftPadding - tp.width - 5; // 텍스트의 위치를 고려해 x축 값을 보정해줍니다.
+    double dy = y - tp.height / 2;
 
-  double calculatedDx(Size size, double dx) =>
-      dx * (size.width - leftPadding - rightPadding) / xSeperatedNum +
-      leftPadding;
+    Offset offset = Offset(dx, dy);
+    tp.paint(canvas, offset);
+  }
 
   double calculatedDy(Size size, double dy) {
-    var height = size.height - topWidgetHeight - bottomWidgetHeight;
-    return (height - dy) / ySeperatedNum * height + topWidgetHeight;
-  }
-
-  List<ChartAreaData> calculatedChartAreaData(
-      List<ChartData> average, List<ChartData> highValue) {
-    List<ChartAreaData> result = [];
-    List<Offset> sortAverageSpots = [...averageValueSpots];
-    List<Offset> sortHighSpots = [...highValueSpots];
-    List<Offset> sortLowSpots = [...lowValueSpots];
-    sortAverageSpots.sort((a, b) => a.dx < b.dx ? 0 : 1);
-    sortHighSpots.sort((a, b) => a.dx < b.dx ? 0 : 1);
-    sortLowSpots.sort((a, b) => a.dx < b.dx ? 0 : 1);
-    for (var i = 0; i < average.length; i++) {
-      var lowDx = .0;
-      var highDx = .0;
-      if (average[i].offset.dx - areaWidth >= 0) {
-        lowDx = average[i].offset.dx - areaWidth;
-      }
-      highDx = average[i].offset.dx + areaWidth;
-      result.add(ChartAreaData(
-          lowDx,
-          average[i].offset.dx,
-          highDx,
-          sortHighSpots[i].dy,
-          averageValueSpots[i].dy,
-          sortLowSpots[i].dy,
-          highValue[i].offset.dy));
-    }
-    return result;
+    var height = size.height - topPadding - bottomPadding;
+    return height +
+        topPadding -
+        (height / ySeperateSize) *
+            dy; //(height - dy) / ySeperatedNum * height + topWidgetHeight;
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-
-  Color _selectTextColor(double value) {
-    return value >= upperThreshold
-        ? Colors.redAccent
-        : value <= lowerThreshold
-            ? Colors.purpleAccent
-            : Colors.greenAccent;
+    return false; //timeSugarLevelDataList.isNotEmpty;
   }
 }
