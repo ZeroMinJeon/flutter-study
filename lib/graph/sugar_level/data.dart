@@ -34,6 +34,68 @@ class SugarLevelData {
   SugarLevelData(this.date, this.level);
 }
 
+class SugarLevelChartData extends SugarLevelData {
+  final double dx;
+  final double dy;
+
+  SugarLevelChartData(super.date, super.level, this.dx, this.dy);
+
+  Offset get offset => Offset(dx, dy);
+
+  factory SugarLevelChartData.fromSugarLevelData(SugarLevelData data, Size size,
+      {required double leftMargin,
+      required double rightMargin,
+      required double leftPadding,
+      required double topPadding,
+      required double rightPadding,
+      required double bottomPadding,
+      required double ySeperateSize}) {
+
+    int xSeperateSize = 86400;
+
+    var x = data.date.second + data.date.minute * 60 + data.date.hour * 3600;
+
+    var width =
+        size.width - leftMargin - rightMargin - leftPadding - rightPadding;
+    var height = size.height - topPadding - bottomPadding;
+    var partWidth = width / xSeperateSize;
+    var partHeight = height / ySeperateSize;
+
+    var dx = leftMargin + leftPadding + partWidth * x;
+    var dy = height + topPadding - partHeight * data.level;
+
+    return SugarLevelChartData(data.date, data.level, dx, dy);
+  }
+
+  factory SugarLevelChartData.fromOffsetThreshold(
+      double dx, double threshold, DateTime preDate, Size size,
+      {required double leftMargin,
+      required double rightMargin,
+      required double leftPadding,
+      required double topPadding,
+      required double rightPadding,
+      required double bottomPadding,
+      required double ySeperateSize}) {
+    int xSeperateSize = 86400;
+
+    var width =
+        size.width - leftMargin - rightMargin - leftPadding - rightPadding;
+    var height = size.height - topPadding - bottomPadding;
+    var partWidth = width / xSeperateSize;
+    var partHeight = height / ySeperateSize;
+
+    var x = (dx - leftMargin - leftPadding) / partWidth;
+    var dy = height + topPadding - partHeight * threshold;
+    var hour = x ~/ 3600;
+    var minute = (x % 3600) ~/ 60;
+    var second = ((x % 3600) % 60).toInt();
+    DateTime date = DateTime(
+        preDate.year, preDate.month, preDate.day, hour, minute, second);
+
+    return SugarLevelChartData(date, threshold, dx, dy);
+  }
+}
+
 class TimeSugarLevelData {
   final DateTime date;
   List<double> levels = [];
@@ -79,12 +141,19 @@ class ChartData {
   double lowDy = .0;
   double averageDy = .0;
   double highDy = .0;
+  int mode = 0; // 0 :time, 1: week: 2: month
 
   ChartData(this.timeSugarLevelData);
 
-  double get lowDx => dx - 50;
+  double get interval => mode == 0
+      ? 10.0
+      : mode == 1
+          ? 50
+          : 10;
 
-  double get highDx => dx + 50;
+  double get lowDx => dx - interval;
+
+  double get highDx => dx + interval;
 
   String get toStringSugarData =>
       'low: ${timeSugarLevelData.lowLevel}, average: ${timeSugarLevelData.averageLevel}, high: ${timeSugarLevelData.highLevel}.';
@@ -105,11 +174,11 @@ class ChartData {
       TimeSugarLevelData data,
       Size size,
       double leftMargin,
-      double topMargin,
       double rightMargin,
-      double bottomMargin,
       double leftPadding,
+      double topPadding,
       double rightPadding,
+      double bottomPadding,
       int mode,
       double ySeperateSize) {
     ChartData chartData = ChartData(data);
@@ -122,26 +191,27 @@ class ChartData {
         break;
       case 1: //week
         x = data.weekday == 7 ? 0 : data.weekday;
-        xSeperateSize = 7;
+        xSeperateSize = 6;
         break;
       case 2: //month
-        x = data.day;
+        x = data.day - 1;
         xSeperateSize = DateTime(data.date.year, data.date.month + 1, 1)
-            .subtract(const Duration(days: 1))
-            .day;
+                .subtract(const Duration(days: 1))
+                .day -
+            1;
         break;
     }
 
     var width =
         size.width - leftMargin - rightMargin - leftPadding - rightPadding;
-    var height = size.height - topMargin - bottomMargin;
+    var height = size.height - topPadding - bottomPadding;
     var partWidth = width / xSeperateSize;
     var partHeight = height / ySeperateSize;
 
     chartData.dx = leftPadding + leftMargin + partWidth * x;
-    chartData.highDy = height + topMargin - partHeight * data.highLevel;
-    chartData.averageDy = height + topMargin - partHeight * data.averageLevel;
-    chartData.lowDy = height + topMargin - partHeight * data.lowLevel;
+    chartData.highDy = height + topPadding - partHeight * data.highLevel;
+    chartData.averageDy = height + topPadding - partHeight * data.averageLevel;
+    chartData.lowDy = height + topPadding - partHeight * data.lowLevel;
 
     return chartData;
   }

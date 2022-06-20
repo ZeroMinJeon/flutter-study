@@ -1,188 +1,25 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter3study/graph/data.dart';
+import 'package:flutter3study/graph/sugar_level/data.dart';
 
-class DrawWeekSugarLevelChartScreen extends StatefulWidget {
-  DrawWeekSugarLevelChartScreen({Key? key}) : super(key: key);
-
-  @override
-  State<DrawWeekSugarLevelChartScreen> createState() =>
-      _DrawWeekSugarLevelChartScreenState();
-}
-
-class _DrawWeekSugarLevelChartScreenState
-    extends State<DrawWeekSugarLevelChartScreen> {
-  DateTime date = DateTime(2022, 5, 1);
-  List<SugarLevelData> data = [
-    SugarLevelData(DateTime(2022, 5, 1, 1), 30),
-    SugarLevelData(DateTime(2022, 5, 1, 2), 70),
-    SugarLevelData(DateTime(2022, 5, 1, 3, 10), 80),
-    SugarLevelData(DateTime(2022, 5, 1, 3, 20), 90),
-    SugarLevelData(DateTime(2022, 5, 1, 4), 90),
-    SugarLevelData(DateTime(2022, 5, 1, 5), 90),
-    SugarLevelData(DateTime(2022, 5, 1, 6), 100),
-    SugarLevelData(DateTime(2022, 5, 1, 7), 120),
-    SugarLevelData(DateTime(2022, 5, 1, 7), 110),
-    SugarLevelData(DateTime(2022, 5, 1, 8), 130),
-    SugarLevelData(DateTime(2022, 5, 1, 14), 140),
-    SugarLevelData(DateTime(2022, 5, 1, 19), 150),
-    SugarLevelData(DateTime(2022, 5, 1, 20), 210),
-    SugarLevelData(DateTime(2022, 5, 1, 23), 100),
-    SugarLevelData(DateTime(2022, 5, 2, 8), 100),
-    SugarLevelData(DateTime(2022, 5, 2, 10), 140),
-    SugarLevelData(DateTime(2022, 5, 2, 16), 120),
-    SugarLevelData(DateTime(2022, 5, 2, 19), 150),
-    SugarLevelData(DateTime(2022, 5, 3, 1), 100),
-    SugarLevelData(DateTime(2022, 5, 3, 21), 120),
-    SugarLevelData(DateTime(2022, 5, 4, 1), 120),
-    SugarLevelData(DateTime(2022, 5, 5, 1), 100),
-    SugarLevelData(DateTime(2022, 5, 5, 4), 70),
-    SugarLevelData(DateTime(2022, 5, 6, 1), 100),
-    SugarLevelData(DateTime(2022, 5, 6, 10), 10),
-    SugarLevelData(DateTime(2022, 5, 7, 1), 100),
-    SugarLevelData(DateTime(2022, 5, 8, 1), 120),
-    SugarLevelData(DateTime(2022, 5, 12, 1), 130),
-    SugarLevelData(DateTime(2022, 5, 14, 1), 120),
-    SugarLevelData(DateTime(2022, 5, 18, 1), 110),
-    SugarLevelData(DateTime(2022, 5, 19, 1), 100),
-    SugarLevelData(DateTime(2022, 5, 20, 1), 120),
-    SugarLevelData(DateTime(2022, 5, 21, 1), 100),
-  ];
-
-  List<TimeSugarLevelData> timeSugarLevelDataList = [];
-  double ySeperateSize = 230;
-  double upperThreshold = 180;
-  double normalThreshold = 120;
-  double lowerThreshold = 70;
-
-  double leftPadding = 100;
-  double topPadding = 100;
-  double rightPadding = 100;
-  double bottomPadding = 50;
-
-  @override
-  void initState() {
-    super.initState();
-    checkWeekData(isFirst: true);
-  }
-
-  void checkWeekData({bool isFirst = false}) {
-    var thisWeekday = date.weekday;
-    List<TimeSugarLevelData> result = [];
-    data.sort((a, b) => a.date.isBefore(b.date) ? 0 : 1);
-    var startDate = DateTime(
-        date.year, date.month, date.day - (thisWeekday == 7 ? 0 : thisWeekday));
-    if (!isFirst &&
-        timeSugarLevelDataList.isNotEmpty &&
-        startDate.isAtSameMomentAs(timeSugarLevelDataList.first.date)) return;
-    for (int i = 0; i < 7; i++) {
-      var aDate = DateTime(startDate.year, startDate.month, startDate.day + i);
-      var bDate =
-          DateTime(startDate.year, startDate.month, startDate.day + i + 1);
-      for (var d in data) {
-        if ((d.date.isAfter(aDate) || d.date.isAtSameMomentAs(aDate)) &&
-            d.date.isBefore(bDate)) {
-          var index = result
-              .indexWhere((element) => element.date.isAtSameMomentAs(aDate));
-          if (index != -1) {
-            result[index].addLevel(d.level);
-          } else {
-            result.add(TimeSugarLevelData.fromLevelAndDate(aDate, d.level));
-          }
-        } else {
-          continue;
-        }
-      }
-    }
-    setState(() {
-      timeSugarLevelDataList = [...result];
-      var highY = result.fold<double>(
-          0,
-          (previousValue, element) => previousValue > element.highLevel
-              ? previousValue
-              : element.highLevel);
-      ySeperateSize = ySeperateSize > highY ? ySeperateSize : highY;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      child: Column(children: [
-        FittedBox(
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: 400,
-            child: Stack(
-              children: [
-                _ChartBackground(
-                  width: MediaQuery.of(context).size.width,
-                  height: 400,
-                  ySeperateSize: ySeperateSize,
-                  upperThreshold: upperThreshold,
-                  normalThreshold: normalThreshold,
-                  lowerThreshold: lowerThreshold,
-                  leftPadding: leftPadding,
-                  rightPadding: rightPadding,
-                  topPadding: topPadding,
-                  bottomPadding: bottomPadding,
-                ),
-                _ChartForGround(
-                  timeSugarLevelDataList: timeSugarLevelDataList,
-                  width: MediaQuery.of(context).size.width,
-                  height: 400,
-                  ySeperateSize: ySeperateSize,
-                  upperThreshold: upperThreshold,
-                  normalThreshold: normalThreshold,
-                  lowerThreshold: lowerThreshold,
-                  leftPadding: leftPadding,
-                  rightPadding: rightPadding,
-                  topPadding: topPadding,
-                  bottomPadding: bottomPadding,
-                ),
-              ],
-            ),
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-                onPressed: () {
-                  setState(() => date = date.subtract(Duration(days: 1)));
-                  checkWeekData();
-                },
-                icon: Icon(Icons.remove)),
-            Text('${date.year}.${date.month}.${date.day}'),
-            IconButton(
-                onPressed: () {
-                  setState(() => date = date.add(Duration(days: 1)));
-                  checkWeekData();
-                },
-                icon: Icon(Icons.add))
-          ],
-        )
-      ]),
-    );
-  }
-}
-
-class _ChartForGround extends StatefulWidget {
+class SugarLevelChartWidget extends StatefulWidget {
   final double width;
   final double height;
   final double ySeperateSize;
   final double upperThreshold;
   final double normalThreshold;
   final double lowerThreshold;
+  final double leftMargin;
+  final double rightMargin;
   final double leftPadding;
   final double topPadding;
   final double rightPadding;
   final double bottomPadding;
   final List<TimeSugarLevelData> timeSugarLevelDataList;
+  final bool isWeeklyMode;
 
-  const _ChartForGround(
+  const SugarLevelChartWidget(
       {Key? key,
       required this.width,
       required this.height,
@@ -191,36 +28,22 @@ class _ChartForGround extends StatefulWidget {
       required this.normalThreshold,
       required this.lowerThreshold,
       required this.timeSugarLevelDataList,
-      this.leftPadding = 100,
-      this.topPadding = 50,
-      this.rightPadding = 100,
-      this.bottomPadding = 100})
+      required this.isWeeklyMode,
+      this.leftPadding = 15,
+      this.topPadding = 30,
+      this.rightPadding = 15,
+      this.bottomPadding = 30,
+      this.leftMargin = 25,
+      this.rightMargin = 25})
       : super(key: key);
 
   @override
-  State<_ChartForGround> createState() => _ChartForGroundState();
+  State<SugarLevelChartWidget> createState() => _SugarLevelChartPainterState();
 }
 
-class _ChartForGroundState extends State<_ChartForGround> {
+class _SugarLevelChartPainterState extends State<SugarLevelChartWidget> {
   double? touchDx;
-
   late List<ChartData> chartData;
-
-  void calculatedData() {
-    chartData = widget.timeSugarLevelDataList
-        .map((data) => ChartData.fromTimeSugarLevelData(
-            data,
-            Size(widget.width, widget.height),
-            widget.leftPadding,
-            widget.topPadding,
-            widget.rightPadding,
-            widget.bottomPadding,
-            100,
-            100,
-            1,
-            widget.ySeperateSize))
-        .toList();
-  }
 
   @override
   void initState() {
@@ -233,8 +56,8 @@ class _ChartForGroundState extends State<_ChartForGround> {
     if (oldWidget.timeSugarLevelDataList.isEmpty ||
         widget.timeSugarLevelDataList.isEmpty) {
       calculatedData();
-    } else if (!oldWidget.timeSugarLevelDataList.first.date
-        .isAtSameMomentAs(widget.timeSugarLevelDataList.first.date)) {
+    } else if (!oldWidget.timeSugarLevelDataList.last.date
+        .isAtSameMomentAs(widget.timeSugarLevelDataList.last.date)) {
       calculatedData();
     }
     super.didUpdateWidget(oldWidget);
@@ -257,71 +80,50 @@ class _ChartForGroundState extends State<_ChartForGround> {
             width: widget.width,
             height: widget.height,
             child: CustomPaint(
-              painter: _WeekSugarLevelChart(
+              size: Size(widget.width, widget.height),
+              foregroundPainter: _SugarLevelChartPainter(
                   chartDataList: chartData,
                   ySeperatedNum: widget.ySeperateSize,
                   upperThreshold: widget.upperThreshold,
                   normalThreshold: widget.normalThreshold,
                   lowerThreshold: widget.lowerThreshold,
                   touchDx: touchDx),
+              painter: _SugarLevelChartBackgroundPainter(
+                  ySeperateSize: widget.ySeperateSize,
+                  upperThreshold: widget.upperThreshold,
+                  normalThreshold: widget.normalThreshold,
+                  lowerThreshold: widget.lowerThreshold,
+                  leftMargin: widget.leftMargin,
+                  rightMargin: widget.rightMargin,
+                  leftPadding: widget.leftPadding,
+                  topPadding: widget.topPadding,
+                  rightPadding: widget.rightPadding,
+                  bottomPadding: widget.bottomPadding),
             ),
           ),
         ),
       ),
     );
   }
-}
 
-class _ChartBackground extends StatelessWidget {
-  final double width;
-  final double height;
-  final double ySeperateSize;
-  final double upperThreshold;
-  final double normalThreshold;
-  final double lowerThreshold;
-  final double leftPadding;
-  final double topPadding;
-  final double rightPadding;
-  final double bottomPadding;
-
-  const _ChartBackground(
-      {Key? key,
-      required this.width,
-      required this.height,
-      required this.ySeperateSize,
-      required this.upperThreshold,
-      required this.normalThreshold,
-      required this.lowerThreshold,
-      this.leftPadding = 100,
-      this.topPadding = 50,
-      this.rightPadding = 100,
-      this.bottomPadding = 100})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: CustomPaint(
-          size: Size(width, height),
-          painter: _WeekSugarLevelBackgroundChart(
-              ySeperateSize: ySeperateSize,
-              upperThreshold: upperThreshold,
-              normalThreshold: normalThreshold,
-              lowerThreshold: lowerThreshold,
-              leftPadding: leftPadding,
-              topPadding: topPadding,
-              rightPadding: rightPadding,
-              bottomPadding: bottomPadding),
-        ),
-      ),
-    );
+  void calculatedData() {
+    chartData = widget.timeSugarLevelDataList
+        .map((data) => ChartData.fromTimeSugarLevelData(
+            data,
+            Size(widget.width, widget.height),
+            widget.leftMargin,
+            widget.rightMargin,
+            widget.leftPadding,
+            widget.topPadding,
+            widget.rightPadding,
+            widget.bottomPadding,
+            widget.isWeeklyMode ? 1 : 2,
+            widget.ySeperateSize))
+        .toList();
   }
 }
 
-class _WeekSugarLevelChart extends CustomPainter {
+class _SugarLevelChartPainter extends CustomPainter {
   final List<ChartData> chartDataList;
   final double upperThreshold;
   final double normalThreshold;
@@ -342,7 +144,7 @@ class _WeekSugarLevelChart extends CustomPainter {
 
   ChartAreaData? chartAreaData;
 
-  _WeekSugarLevelChart(
+  _SugarLevelChartPainter(
       {required this.chartDataList,
       required this.ySeperatedNum,
       required this.upperThreshold,
@@ -367,6 +169,13 @@ class _WeekSugarLevelChart extends CustomPainter {
     drawLinesAndSpots(canvas, size,
         chartDataList.map((data) => Offset(data.dx, data.lowDy)).toList(),
         lineColor: Colors.orangeAccent, spotColor: Colors.black);
+
+    canvas.drawPoints(
+        PointMode.lines,
+        [Offset(0, 0), Offset(size.width, size.height)],
+        Paint()
+          ..color = Colors.white.withOpacity(0)
+          ..strokeWidth = 3);
   }
 
   void drawLinesAndSpots(Canvas canvas, Size size, List<Offset> offsets,
@@ -384,7 +193,7 @@ class _WeekSugarLevelChart extends CustomPainter {
 
   // 터치 했을 때에 그 영역에 있는 값 디스플레이 해주기.
   void drawValueText(Canvas canvas, Size size, List<ChartAreaData> areas) {
-    if (touchDx == null) {
+    if (touchDx == null || areas.isEmpty) {
       return;
     }
     ChartAreaData? result;
@@ -515,12 +324,14 @@ class _WeekSugarLevelChart extends CustomPainter {
   }
 }
 
-class _WeekSugarLevelBackgroundChart extends CustomPainter {
+class _SugarLevelChartBackgroundPainter extends CustomPainter {
   final double upperThreshold;
   final double normalThreshold;
   final double lowerThreshold;
   final double ySeperateSize;
 
+  final double leftMargin;
+  final double rightMargin;
   final double leftPadding;
   final double topPadding;
   final double rightPadding;
@@ -533,15 +344,17 @@ class _WeekSugarLevelBackgroundChart extends CustomPainter {
 
   ChartAreaData? chartAreaData;
 
-  _WeekSugarLevelBackgroundChart(
+  _SugarLevelChartBackgroundPainter(
       {required this.ySeperateSize,
       required this.upperThreshold,
       required this.normalThreshold,
       required this.lowerThreshold,
-      this.leftPadding = 100,
-      this.topPadding = 50,
-      this.rightPadding = 100,
-      this.bottomPadding = 100});
+      this.leftPadding = 15,
+      this.topPadding = 30,
+      this.rightPadding = 15,
+      this.bottomPadding = 30,
+      this.leftMargin = 25,
+      this.rightMargin = 25});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -555,8 +368,8 @@ class _WeekSugarLevelBackgroundChart extends CustomPainter {
     canvas.drawPoints(
         PointMode.lines,
         [
-          Offset(leftPadding, size.height - bottomPadding),
-          Offset(size.width - rightPadding, size.height - bottomPadding)
+          Offset(leftMargin, size.height - bottomPadding),
+          Offset(size.width - rightMargin, size.height - bottomPadding)
         ],
         paint);
   }
@@ -568,14 +381,15 @@ class _WeekSugarLevelBackgroundChart extends CustomPainter {
     var upperDy = calculatedDy(size, upperThreshold);
     var normalDy = calculatedDy(size, normalThreshold);
     var lowerDy = calculatedDy(size, lowerThreshold);
-    var i = size.width - rightPadding;
+    var i = size.width - rightMargin;
+    var last = leftMargin + leftPadding / 2;
     while (true) {
       upperThresholdOffsets.add(Offset(i, upperDy));
       normalThresholdOffsets.add(Offset(i, normalDy));
       lowerThresholdOffsets.add(Offset(i, lowerDy));
       i -= 10;
-      if (i < leftPadding) {
-        i = leftPadding;
+      if (i < last) {
+        i = last;
         upperThresholdOffsets.add(Offset(i, upperDy));
         normalThresholdOffsets.add(Offset(i, normalDy));
         lowerThresholdOffsets.add(Offset(i, lowerDy));
@@ -612,7 +426,7 @@ class _WeekSugarLevelBackgroundChart extends CustomPainter {
         TextPainter(text: maxSpan, textDirection: TextDirection.ltr);
     tp.layout();
 
-    double dx = leftPadding - tp.width - 5; // 텍스트의 위치를 고려해 x축 값을 보정해줍니다.
+    double dx = leftMargin - leftPadding / 2 - 8; // 텍스트의 위치를 고려해 x축 값을 보정해줍니다.
     double dy = y - tp.height / 2;
 
     Offset offset = Offset(dx, dy);
