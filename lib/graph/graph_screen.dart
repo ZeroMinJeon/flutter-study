@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter3study/graph/nutrition_trend/nutrition_trend_screen.dart';
 import 'package:flutter3study/graph/sugar_level/draw_sugar_level_chart.dart';
 import 'package:flutter3study/graph/sugar_level/sugar_level_chart_screen.dart';
 
@@ -21,7 +22,8 @@ class GraphScreen extends StatelessWidget {
               height: 20,
               color: Colors.indigoAccent,
             ),
-            SugarLevelChartScreen()
+            SugarLevelChartScreen(),
+            const NutritionTrendScreen()
           ],
         ));
   }
