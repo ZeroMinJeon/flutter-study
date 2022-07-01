@@ -16,7 +16,7 @@ class CardInteractionScreen extends StatelessWidget {
           children: const [
             CardWithLightWidget(),
             SizedBox(
-              height: 40,
+              height: 100,
             ),
             SamsungPayInteractionCardWidget()
           ],

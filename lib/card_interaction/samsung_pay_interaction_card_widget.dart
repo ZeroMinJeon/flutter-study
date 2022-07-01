@@ -18,7 +18,16 @@ class _SamsungPayInteractionCardWidgetState
   void initState() {
     animationController =
         AnimationController(duration: Duration(milliseconds: 300), vsync: this);
-    animation = Tween<double>(begin: 0, end: 50).animate(animationController);
+    animation = Tween<double>(begin: 0, end: 50).animate(animationController)
+      ..addStatusListener((status) async {
+        if (status == AnimationStatus.completed) {
+          await Future.delayed(Duration(seconds: 1));
+          animationController.reverse();
+        }
+        // } else if (status == AnimationStatus.dismissed) {
+        //   animationController.forward();
+        // }
+      });
     super.initState();
   }
 
@@ -34,9 +43,9 @@ class _SamsungPayInteractionCardWidgetState
         onTap: () {
           animationController.forward();
         },
-        onDoubleTap: () {
-          animationController.reverse();
-        },
+        // onDoubleTap: () {
+        //   animationController.reverse();
+        // },
         child: _AnimatedCard(
           listenable: animationController,
         ));
