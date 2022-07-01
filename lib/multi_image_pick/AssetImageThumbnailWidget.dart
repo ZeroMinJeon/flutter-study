@@ -5,7 +5,7 @@ import 'package:flutter3study/multi_image_pick/select_image_entity.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class AssetImageCS extends StatelessWidget {
-  final SelectEntity selectEntity;
+  final SelectWithCountEntity selectEntity;
   final double width;
   final double height;
   final BoxFit boxFit;

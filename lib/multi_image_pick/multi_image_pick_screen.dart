@@ -12,7 +12,7 @@ class MultiImagePickScreen extends StatefulWidget {
 }
 
 class _MultiImagePickScreenState extends State<MultiImagePickScreen> {
-  List<SelectEntity> selectedEntities = [];
+  List<SelectWithCountEntity> selectedEntities = [];
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,7 @@ class _MultiImagePickScreenState extends State<MultiImagePickScreen> {
                 onPressed: () {
                   showBottomModalForImagePick();
                 },
-                child: Text("앨범")),
+                child: const Text("앨범")),
           ],
         ),
       ),
@@ -50,7 +50,7 @@ class _MultiImagePickScreenState extends State<MultiImagePickScreen> {
   }
 
   void showBottomModalForImagePick() async {
-    List<SelectEntity> selectedEntities = await showModalBottomSheet(
+    List<SelectWithCountEntity> selectedEntities = await showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -59,9 +59,11 @@ class _MultiImagePickScreenState extends State<MultiImagePickScreen> {
             prevSelectedEntity: this.selectedEntities,
           );
         });
-    setState(() {
-      this.selectedEntities = selectedEntities;
-    });
+    if (this.selectedEntities != selectedEntities){
+      setState(() {
+        this.selectedEntities = selectedEntities;
+      });
+    }
   }
 }
 
@@ -69,7 +71,7 @@ class ImagePickBottomSheetWidget extends StatefulWidget {
   const ImagePickBottomSheetWidget({Key? key, required this.prevSelectedEntity})
       : super(key: key);
 
-  final List<SelectEntity> prevSelectedEntity;
+  final List<SelectWithCountEntity> prevSelectedEntity;
 
   @override
   State<ImagePickBottomSheetWidget> createState() =>
@@ -78,8 +80,9 @@ class ImagePickBottomSheetWidget extends StatefulWidget {
 
 class _ImagePickBottomSheetWidgetState
     extends State<ImagePickBottomSheetWidget> {
-  List<SelectEntity> selectedEntities = [];
-  List<SelectEntity> entities = [];
+  List<SelectWithCountEntity> selectedEntities = [];
+  List<SelectWithCountEntity> entities = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -108,10 +111,10 @@ class _ImagePickBottomSheetWidgetState
                 children: [
                   TextButton(
                       onPressed: () async {
-                        List<SelectEntity> result = await sendData();
+                        List<SelectWithCountEntity> result = await sendData();
                         Navigator.pop(context, result);
                       },
-                      child: Text('취소')),
+                      child: const Text('취소')),
                   const Center(
                     child: Text('엘범'),
                   )
@@ -121,21 +124,25 @@ class _ImagePickBottomSheetWidgetState
             Expanded(
                 child: Container(
               color: Colors.white,
-              child: GridView.count(
-                crossAxisCount: 3,
-                children: List.generate(
-                    entities.length,
-                    (index) => GestureDetector(
-                          onTap: () => selectOrUnSelect(index),
-                          child: AssetImageCS(
-                            selectEntity: entities[index],
-                            width: 300,
-                            height: 300,
-                            boxFit: BoxFit.cover,
-                            minusCount: entities[index].selectCount,
-                          ),
-                        )),
-              ),
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.blueAccent,),
+                    )
+                  : GridView.count(
+                      crossAxisCount: 3,
+                      children: List.generate(
+                          entities.length,
+                          (index) => GestureDetector(
+                                onTap: () => selectOrUnSelect(index),
+                                child: AssetImageCS(
+                                  selectEntity: entities[index],
+                                  width: 300,
+                                  height: 300,
+                                  boxFit: BoxFit.cover,
+                                  minusCount: entities[index].selectCount,
+                                ),
+                              )),
+                    ),
             ))
           ],
         ),
@@ -144,8 +151,8 @@ class _ImagePickBottomSheetWidgetState
   }
 
   void getImagesFromAlbum() async {
-    final PermissionState _ps = await PhotoManager.requestPermissionExtend();
-    if (_ps.isAuth) {
+    final PermissionState ps = await PhotoManager.requestPermissionExtend();
+    if (ps.isAuth) {
       List<AssetPathEntity> list =
           await PhotoManager.getAssetPathList(type: RequestType.image);
       List<AssetEntity> allImageList = [];
@@ -159,22 +166,21 @@ class _ImagePickBottomSheetWidgetState
       }
       setState(() {
         for (AssetEntity data in allImageList) {
-          entities.add(SelectEntity(data));
+          entities.add(SelectWithCountEntity(data, entities.length));
         }
-        for (SelectEntity data in selectedEntities) {
-          var index =
-              entities.indexWhere((element) => element.entity == data.entity);
+        for (SelectWithCountEntity data in selectedEntities) {
+          var index = findIndexBSearch(data.index);
           entities[index].isSelect = true;
           entities[index].selectCount = data.selectCount;
         }
+        isLoading = false;
       });
     } else {}
-
   }
 
   void selectOrUnSelect(int index) {
     var entityIndex = selectedEntities
-        .indexWhere((element) => element.entity == entities[index].entity);
+        .indexWhere((element) => element.index == entities[index].index);
     setState(() {
       if (entityIndex != -1) {
         selectedEntities.removeAt(entityIndex);
@@ -182,14 +188,14 @@ class _ImagePickBottomSheetWidgetState
         entities[index].isSelect = false;
         for (var j = 0; j < selectedEntities.length; j++) {
           selectedEntities[j].selectCount = j + 1;
-          var i = entities.indexWhere((element) => element.entity == selectedEntities[j].entity);
+          var i = findIndexBSearch(selectedEntities[j].index);
           entities[i].selectCount = j + 1;
         }
       } else {
         entities[index].isSelect = true;
         selectedEntities.add(entities[index]);
         for (var j = 0; j < selectedEntities.length; j++) {
-          var i = entities.indexWhere((element) => element.entity == selectedEntities[j].entity);
+          var i = findIndexBSearch(selectedEntities[j].index);
           entities[i].selectCount = j + 1;
           selectedEntities[j].selectCount = j + 1;
         }
@@ -197,13 +203,32 @@ class _ImagePickBottomSheetWidgetState
     });
   }
 
-  Future<List<SelectEntity>> sendData() async {
-    List<SelectEntity> result = [];
+  Future<List<SelectWithCountEntity>> sendData() async {
+    List<SelectWithCountEntity> result = [];
 
-    for (SelectEntity data in selectedEntities) {
+    for (SelectWithCountEntity data in selectedEntities) {
       data.uint8List = await data.entity.originBytes;
       result.add(data);
     }
     return result;
+  }
+
+  int findIndexBSearch(int index) {
+    int low = 0;
+    int high = entities.length;
+    double mid;
+
+    while (low <= high) {
+      mid = (low + high) / 2;
+      var midIndex = mid.toInt();
+      if (entities[midIndex].index == index) {
+        return midIndex;
+      } else if (entities[midIndex].index > index) {
+        high = midIndex;
+      } else {
+        low = midIndex + 1;
+      }
+    }
+    return -1;
   }
 }
